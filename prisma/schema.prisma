@@ -1,0 +1,117 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id        String   @id @default(uuid())
+    name      String
+    email     String?  @unique
+    phone     String   @unique
+    address   String?
+    latitude  Float?
+    longitude Float?
+    role      Role
+    createdAt DateTime @default(now())
+
+    chef            Chef?
+    deliveryPartner DeliveryPartner?
+    orders          Order[]          @relation("CustomerOrders")
+}
+
+model OTP {
+    id        String   @id @default(uuid())
+    phone     String
+    otpCode   String
+    expiresAt DateTime
+    verified  Boolean  @default(false)
+}
+
+model Chef {
+    id          String     @id @default(uuid())
+    user        User       @relation(fields: [id], references: [id])
+    bio         String?
+    isAvailable Boolean    @default(true)
+    menuItems   MenuItem[]
+    orders      Order[]    @relation("ChefOrders")
+}
+
+model MenuItem {
+    id          String      @id @default(uuid())
+    chef        Chef        @relation(fields: [chefId], references: [id])
+    chefId      String
+    itemName    String
+    description String?
+    price       Float
+    imageUrl    String?
+    isAvailable Boolean     @default(true)
+    orderItems  OrderItem[]
+}
+
+model DeliveryPartner {
+    id          String  @id @default(uuid())
+    user        User    @relation(fields: [id], references: [id])
+    isAvailable Boolean @default(true)
+    deliveries  Order[] @relation("DeliveryOrders")
+}
+
+model Order {
+    id          String           @id @default(uuid())
+    customer    User             @relation("CustomerOrders", fields: [userId], references: [id], map: "Order_customerId_fkey")
+    userId      String
+    chef        Chef             @relation("ChefOrders", fields: [chefId], references: [id], map: "Order_chefId_fkey")
+    chefId      String
+    delivery    DeliveryPartner? @relation("DeliveryOrders", fields: [deliveryId], references: [id], map: "Order_deliveryId_fkey")
+    deliveryId  String?
+    totalAmount Float
+    status      OrderStatus
+    createdAt   DateTime         @default(now())
+
+    orderItems OrderItem[]
+    payment    Payment?
+}
+
+model OrderItem {
+    id         String   @id @default(uuid())
+    order      Order    @relation(fields: [orderId], references: [id])
+    orderId    String
+    menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+    menuItemId String
+    quantity   Int
+    priceEach  Float
+}
+
+model Payment {
+    id            String        @id @default(uuid())
+    order         Order         @relation(fields: [orderId], references: [id])
+    orderId       String        @unique
+    amount        Float
+    status        PaymentStatus
+    transactionId String?
+    createdAt     DateTime      @default(now())
+}
+
+enum Role {
+    customer
+    chef
+    delivery
+}
+
+enum OrderStatus {
+    pending
+    accepted
+    preparing
+    on_the_way
+    delivered
+    cancelled
+}
+
+enum PaymentStatus {
+    pending
+    success
+    failed
+}
