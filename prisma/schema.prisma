@@ -15,7 +15,8 @@ model User {
     address   String?
     latitude  Float?
     longitude Float?
-    role      Role
+    role      Role     @default(customer)
+    isActive  Boolean  @default(true)
     createdAt DateTime @default(now())
 
     chef            Chef?
