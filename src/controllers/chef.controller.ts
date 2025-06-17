@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { S3Service } from '../services/s3.service';
 import { generateOTP } from '../utils/otp.utils';
 
@@ -10,10 +10,10 @@ export class ChefController {
 
     async registerChef(req: Request, res: Response) {
         try {
-            const { name, phone, address, latitude, longitude, bio } = req.body;
+            const { name, phone, email, address, latitude, longitude, bio } = req.body;
 
-            // Check if user already exists
-            const existingUser = await prisma.user.findFirst({
+            // Check if user already exists with this phone number (regardless of role)
+            const existingUser = await prisma.user.findUnique({
                 where: {
                     phone: phone
                 }
@@ -22,7 +22,7 @@ export class ChefController {
             if (existingUser) {
                 return res.status(400).json({
                     success: false,
-                    message: 'User with this phone number already exists'
+                    message: 'A user with this phone number already exists'
                 });
             }
 
@@ -32,6 +32,7 @@ export class ChefController {
                     data: {
                         name,
                         phone,
+                        email,
                         address,
                         latitude,
                         longitude,
@@ -62,6 +63,7 @@ export class ChefController {
                     id: result.user.id,
                     name: result.user.name,
                     phone: result.user.phone,
+                    email: result.user.email,
                     role: result.user.role,
                     chef: {
                         bio: result.chef.bio,
@@ -71,6 +73,15 @@ export class ChefController {
             });
         } catch (error) {
             console.error('Error in chef registration:', error);
+            
+            // Handle Prisma unique constraint error specifically
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'A user with this phone number already exists'
+                });
+            }
+
             return res.status(500).json({
                 success: false,
                 message: 'Internal server error'
