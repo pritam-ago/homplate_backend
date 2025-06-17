@@ -4,7 +4,7 @@ import { generateOTP, sendOTP, verifyOTP } from '../utils/otp.utils';
 import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'; // Make sure to set this in your .env file
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export class AuthController {
     // Customer signup

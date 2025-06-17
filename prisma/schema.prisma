@@ -12,6 +12,7 @@ model User {
     name      String
     email     String?  @unique
     phone     String   @unique
+    password  String
     address   String?
     latitude  Float?
     longitude Float?
@@ -51,29 +52,31 @@ model MenuItem {
     imageUrl    String?
     isAvailable Boolean     @default(true)
     orderItems  OrderItem[]
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
 }
 
 model DeliveryPartner {
     id          String  @id @default(uuid())
     user        User    @relation(fields: [id], references: [id])
     isAvailable Boolean @default(true)
-    deliveries  Order[] @relation("DeliveryOrders")
+    orders      Order[] @relation("DeliveryOrders")
 }
 
 model Order {
-    id          String           @id @default(uuid())
-    customer    User             @relation("CustomerOrders", fields: [userId], references: [id], map: "Order_customerId_fkey")
-    userId      String
-    chef        Chef             @relation("ChefOrders", fields: [chefId], references: [id], map: "Order_chefId_fkey")
-    chefId      String
-    delivery    DeliveryPartner? @relation("DeliveryOrders", fields: [deliveryId], references: [id], map: "Order_deliveryId_fkey")
-    deliveryId  String?
-    totalAmount Float
-    status      OrderStatus
-    createdAt   DateTime         @default(now())
-
-    orderItems OrderItem[]
-    payment    Payment?
+    id                String           @id @default(uuid())
+    customer          User             @relation("CustomerOrders", fields: [customerId], references: [id])
+    customerId        String
+    chef              Chef             @relation("ChefOrders", fields: [chefId], references: [id])
+    chefId            String
+    items             OrderItem[]
+    status            OrderStatus      @default(pending)
+    totalAmount       Float
+    deliveryPartner   DeliveryPartner? @relation("DeliveryOrders", fields: [deliveryPartnerId], references: [id])
+    deliveryPartnerId String?
+    payment           Payment?
+    createdAt         DateTime         @default(now())
+    updatedAt         DateTime         @updatedAt
 }
 
 model OrderItem {
